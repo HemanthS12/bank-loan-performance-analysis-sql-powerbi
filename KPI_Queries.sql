@@ -221,3 +221,135 @@ and curr_mnth.mnth_data = prev_mnth.mnth_data + 1
 order by curr_mnth.mnth_data asc;
 */
 ------------------------------------------------------------------------------------------------
+-- Good Loan vs Bad Loan KPI's
+
+-- Good Loan Application Percentage
+select 
+cast(round(COUNT(case when loan_status = 'Fully Paid' or loan_status = 'Current' then id end) * 100.0
+/
+COUNT(id), 2) as decimal(10, 2)) as Good_Loan_Percentage
+from bank_loan_data;
+
+-- Good Loan Applications
+select COUNT(id) as Good_Loan_Applications
+from bank_loan_data
+where loan_status = 'Fully Paid' or loan_status = 'Current';
+
+-- Good Loan Funded Amount
+select SUM(loan_amount) as Good_Loan_Funded_Amount
+from bank_loan_data
+where loan_status in ('Fully Paid', 'Current');
+
+-- Good Loan Total Received Amount
+select SUM(total_payment) as Good_Loan_Received_Amount
+from bank_loan_data
+where loan_status in ('Fully Paid', 'Current');
+------------------------------------------------------------------------------------------------
+-- Bad Loan Total Application Percentage
+select
+cast(round(COUNT(case when loan_status = 'Charged Off' then id end) * 100.0
+/
+COUNT(id), 2) as decimal(10, 2)) as Bad_Loan_Percentage
+from bank_loan_data;
+
+-- Bad Loan Applications
+select COUNT(id) as Bad_Loan_Applications
+from bank_loan_data
+where loan_status = 'Charged Off';
+
+-- Bad Loan Funded Amount
+select SUM(loan_amount) as Bad_Loan_Funded_Amount
+from bank_loan_data
+where loan_status = 'Charged Off';
+
+-- Bad Loan Total Received Amount
+select SUM(total_payment) as Bad_Loan_Amount_Received
+from bank_loan_data
+where loan_status = 'Charged Off';
+------------------------------------------------------------------------------------------------
+-- Loan Status
+select loan_status, 
+COUNT(id) as Total_Loan_Applications, 
+SUM(loan_amount) as Total_Funded_Amount,
+SUM(total_payment) as Total_Amount_Received,
+round(AVG(int_rate) * 100.0, 2) as Avg_Int_Rate,
+round(AVG(dti) * 100.0, 2) as Avg_DTI
+from bank_loan_data
+group by loan_status;
+
+select loan_status,
+SUM(loan_amount) as MTD_Funded_Amount,
+SUM(total_payment) as MTD_Amount_Received
+from bank_loan_data
+where MONTH(issue_date) = MONTH((select max(issue_date) from bank_loan_data))
+and YEAR(issue_date) = YEAR((select max(issue_date) from bank_loan_data))
+group by loan_status;
+------------------------------------------------------------------------------------------------
+-- Overview
+-- Metrics to be shown: Total Loan Applications, Total Funded Amount, and Total Amount Received
+
+-- Monthly trends by Issue Date
+select 
+MONTH(issue_date) as Month_Num,
+DATENAME(MONTH, issue_date) as Month_Name,
+COUNT(id) as Total_Loan_Applications,
+SUM(loan_amount) as Total_Funded_Amount,
+SUM(total_payment) as Total_Amount_Received
+from bank_loan_data
+group by MONTH(issue_date), DATENAME(MONTH, issue_date)
+order by Month_Num;
+
+-- Regional Analysis by State
+select address_state, 
+COUNT(id) as Total_Loan_Applications, 
+SUM(loan_amount) as Total_Funded_Amount,
+SUM(total_payment) as Total_Amount_Received
+from bank_loan_data
+group by address_state
+order by SUM(loan_amount) desc;
+
+-- Loan Term Analysis
+select term,
+COUNT(id) as Total_Loan_Applications, 
+SUM(loan_amount) as Total_Funded_Amount,
+SUM(total_payment) as Total_Amount_Received
+from bank_loan_data
+group by term;
+
+-- Employee Length Analysis
+select emp_length,
+COUNT(id) as Total_Loan_Applications, 
+SUM(loan_amount) as Total_Funded_Amount,
+SUM(total_payment) as Total_Amount_Received
+from bank_loan_data
+group by emp_length
+order by COUNT(id) desc;
+
+-- Loan Purpose Breakdown
+select purpose,
+COUNT(id) as Total_Loan_Applications, 
+SUM(loan_amount) as Total_Funded_Amount,
+SUM(total_payment) as Total_Amount_Received
+from bank_loan_data
+group by purpose
+order by COUNT(id) desc;
+
+-- Home Ownership Analysis
+select home_ownership,
+COUNT(id) as Total_Loan_Applications, 
+SUM(loan_amount) as Total_Funded_Amount,
+SUM(total_payment) as Total_Amount_Received
+from bank_loan_data
+group by home_ownership
+order by COUNT(id) desc;
+
+-- Applying Multiple Filters
+select home_ownership,
+COUNT(id) as Total_Loan_Applications, 
+SUM(loan_amount) as Total_Funded_Amount,
+SUM(total_payment) as Total_Amount_Received
+from bank_loan_data
+where grade = 'A' and address_state = 'CA' and loan_status = 'Fully Paid'
+group by home_ownership
+order by COUNT(id) desc;
+------------------------------------------------------------------------------------------------
